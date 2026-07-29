@@ -98,3 +98,6 @@ MANIFEST
 .vscode
 
 uv.toml
+
+# pytest-benchmark baselines
+.benchmarks/
