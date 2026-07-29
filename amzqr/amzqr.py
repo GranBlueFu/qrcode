@@ -53,7 +53,11 @@ def run(
             raise ValueError(
                 "Wrong picture! Input a filename that exists and be tailed with one of {'.jpg', '.jpeg', '.png', '.bmp', '.gif'}!"
             )
-        if os.path.splitext(picture)[1].lower() == ".gif" and save_name and os.path.splitext(save_name)[1].lower() != ".gif":
+        if (
+            os.path.splitext(picture)[1].lower() == ".gif"
+            and save_name
+            and os.path.splitext(save_name)[1].lower() != ".gif"
+        ):
             raise ValueError(
                 "Wrong save_name! If the picuter is .gif format, the output filename should be .gif format, too!"
             )
@@ -64,7 +68,8 @@ def run(
         if not isinstance(brightness, float):
             raise ValueError("Wrong brightness! Input a float-type value!")
     if save_name and (
-        not isinstance(save_name, str) or os.path.splitext(save_name)[1].lower() not in (".jpg", ".jpeg", ".png", ".bmp", ".gif")
+        not isinstance(save_name, str)
+        or os.path.splitext(save_name)[1].lower() not in (".jpg", ".jpeg", ".png", ".bmp", ".gif")
     ):
         raise ValueError(
             "Wrong save_name! Input a filename tailed with one of {'.jpg', '.jpeg', '.png', '.bmp', '.gif'}!"

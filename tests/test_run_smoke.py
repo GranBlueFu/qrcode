@@ -34,6 +34,7 @@ def test_run_rejects_bad_version(tmp_path):
 
 # --- extension validation ----------------------------------------------------
 
+
 def _make_dummy_file(path, suffix):
     """Create a minimal (1×1) image file at the given path for extension tests.
 
@@ -80,18 +81,14 @@ def test_run_rejects_unsupported_save_name_extension(tmp_path):
 
 def test_run_accepts_jpeg_save_name(tmp_path):
     """`.jpeg` save_name must be accepted."""
-    ver, level, name = amzqr.run(
-        "https://github.com", save_name="out.jpeg", save_dir=str(tmp_path)
-    )
+    ver, level, name = amzqr.run("https://github.com", save_name="out.jpeg", save_dir=str(tmp_path))
     assert os.path.isfile(name)
 
 
 def test_run_accepts_uppercase_save_name(tmp_path):
     """`.JPEG` / `.PNG` save_name must be accepted case-insensitively."""
     for ext in ("out.JPEG", "out.PNG", "out.BMP", "out.JPG", "out.GIF"):
-        ver, level, name = amzqr.run(
-            "https://github.com", save_name=ext, save_dir=str(tmp_path)
-        )
+        ver, level, name = amzqr.run("https://github.com", save_name=ext, save_dir=str(tmp_path))
         assert os.path.isfile(name)
 
 
