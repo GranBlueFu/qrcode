@@ -147,16 +147,17 @@ amzqr https://github.com -p github.jpg [-c] -con 1.5 -bri 1.6
 ```python
 # 安装模块后
 from amzqr import amzqr
+
 version, level, qr_name = amzqr.run(
     words,
     version=1,
-    level='H',
+    level="H",
     picture=None,
     colorized=False,
     contrast=1.0,
     brightness=1.0,
     save_name=None,
-    save_dir=os.getcwd()
+    save_dir=os.getcwd(),
 )
 ```
 

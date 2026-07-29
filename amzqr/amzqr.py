@@ -48,12 +48,16 @@ def run(
         if (
             not isinstance(picture, str)
             or not os.path.isfile(picture)
-            or picture[-4:] not in (".jpg", ".png", ".bmp", ".gif")
+            or os.path.splitext(picture)[1].lower() not in (".jpg", ".jpeg", ".png", ".bmp", ".gif")
         ):
             raise ValueError(
-                "Wrong picture! Input a filename that exists and be tailed with one of {'.jpg', '.png', '.bmp', '.gif'}!"
+                "Wrong picture! Input a filename that exists and be tailed with one of {'.jpg', '.jpeg', '.png', '.bmp', '.gif'}!"
             )
-        if picture[-4:] == ".gif" and save_name and save_name[-4:] != ".gif":
+        if (
+            os.path.splitext(picture)[1].lower() == ".gif"
+            and save_name
+            and os.path.splitext(save_name)[1].lower() != ".gif"
+        ):
             raise ValueError(
                 "Wrong save_name! If the picuter is .gif format, the output filename should be .gif format, too!"
             )
@@ -64,10 +68,11 @@ def run(
         if not isinstance(brightness, float):
             raise ValueError("Wrong brightness! Input a float-type value!")
     if save_name and (
-        not isinstance(save_name, str) or save_name[-4:] not in (".jpg", ".png", ".bmp", ".gif")
+        not isinstance(save_name, str)
+        or os.path.splitext(save_name)[1].lower() not in (".jpg", ".jpeg", ".png", ".bmp", ".gif")
     ):
         raise ValueError(
-            "Wrong save_name! Input a filename tailed with one of {'.jpg', '.png', '.bmp', '.gif'}!"
+            "Wrong save_name! Input a filename tailed with one of {'.jpg', '.jpeg', '.png', '.bmp', '.gif'}!"
         )
     if not os.path.isdir(save_dir):
         raise ValueError("Wrong save_dir! Input a existing-directory!")
@@ -95,10 +100,22 @@ def run(
 
         data_w = qr.size[0] - DATA_OFFSET_PX
         data_h = qr.size[1] - DATA_OFFSET_PX
+
+        # Scale bg to cover the data area, preserving aspect ratio, then
+        # center-crop to exactly data_w × data_h.
         if bg0.size[0] < bg0.size[1]:
-            bg0 = bg0.resize((data_w, data_w * int(bg0.size[1] / bg0.size[0])))
+            # Portrait: fit width to data_w, scale height proportionally
+            new_w = data_w
+            new_h = int(bg0.size[1] * (new_w / bg0.size[0]))
         else:
-            bg0 = bg0.resize((data_h * int(bg0.size[0] / bg0.size[1]), data_h))
+            # Landscape or square: fit height to data_h, scale width proportionally
+            new_h = data_h
+            new_w = int(bg0.size[0] * (new_h / bg0.size[1]))
+
+        bg0 = bg0.resize((new_w, new_h))
+        left = (new_w - data_w) // 2
+        top = (new_h - data_h) // 2
+        bg0 = bg0.crop((left, top, left + data_w, top + data_h))
 
         bg = bg0 if colorized else bg0.convert("1")
 
@@ -147,7 +164,7 @@ def run(
     with tempfile.TemporaryDirectory() as tempdir:
         ver, qr_name = theqrmodule.get_qrcode(version, level, words, tempdir)
 
-        if picture and picture[-4:] == ".gif":
+        if picture and os.path.splitext(picture)[1].lower() == ".gif":
             im = Image.open(picture)
             durations = []
             im.save(os.path.join(tempdir, "0.png"))

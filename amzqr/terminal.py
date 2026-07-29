@@ -60,7 +60,7 @@ def main():
     )
     args = argparser.parse_args()
 
-    if args.picture and args.picture[-4:] == ".gif":
+    if args.picture and os.path.splitext(args.picture)[1].lower() == ".gif":
         print("It may take a while, please wait for minutes...")
 
     ver, ecl, qr_name = run(
