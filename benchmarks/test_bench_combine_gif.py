@@ -37,7 +37,7 @@ def _make_test_gif(path, frame_count, size):
 @pytest.mark.parametrize("frame_count", [1, 3, 10])
 @pytest.mark.parametrize("bg_size", [100, 400, 1200])
 @pytest.mark.parametrize("colorized", [True, False])
-@pytest.mark.parametrize("version", [1, 10])
+@pytest.mark.parametrize("version", [1, 10, 40])
 @pytest.mark.parametrize("ecl", ["L", "M", "Q", "H"])
 @pytest.mark.parametrize("words_key", ["short", "long"])
 def test_bench_combine_gif(

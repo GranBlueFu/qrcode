@@ -22,7 +22,7 @@ def _make_bg(path, size):
 
 @pytest.mark.parametrize("bg_size", [100, 400, 1200])
 @pytest.mark.parametrize("colorized", [True, False])
-@pytest.mark.parametrize("version", [1, 10])
+@pytest.mark.parametrize("version", [1, 10, 40])
 @pytest.mark.parametrize("ecl", ["L", "M", "Q", "H"])
 @pytest.mark.parametrize("words_key", ["short", "long"])
 def test_bench_combine_static(benchmark, tmp_path, bg_size, colorized, version, ecl, words_key):

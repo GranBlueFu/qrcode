@@ -4,9 +4,63 @@
 import os
 import tempfile
 
-from PIL import Image
+from PIL import Image, ImageChops, ImageDraw
 
 from amzqr.mylibs import theqrmodule
+
+
+def _build_combine_mask(data_w, data_h, ver):
+    """Return an "L" (data_w x data_h) paste mask: 255 = draw bg, 0 = keep QR.
+
+    Covers only the geometric reserved regions (finders, timing, alignment,
+    sampling holes); the background-transparency term is applied by the
+    caller via ImageChops.multiply.  Reads layout constants from
+    amzqr.mylibs.constant.
+    """
+    from amzqr.mylibs.constant import (
+        FINDER_REGION_PX,
+        TIMING_MODULE,
+        alig_location,
+    )
+    from amzqr.mylibs.constant import (
+        PIXELS_PER_MODULE as ppm,
+    )
+
+    mask = Image.new("L", (data_w, data_h), 255)
+    draw = ImageDraw.Draw(mask)
+
+    # (2)(3)(4) finder + separator: three FINDER_REGION_PX corners.
+    fr = FINDER_REGION_PX
+    draw.rectangle([0, 0, fr - 1, fr - 1], fill=0)  # top-left
+    draw.rectangle([0, data_h - fr, fr - 1, data_h - 1], fill=0)  # bottom-left
+    draw.rectangle([data_w - fr, 0, data_w - 1, fr - 1], fill=0)  # top-right
+
+    # (1) timing pattern: module-6 row and column (PPM px wide).
+    t0 = TIMING_MODULE * ppm
+    t1 = (TIMING_MODULE + 1) * ppm - 1
+    draw.rectangle([t0, 0, t1, data_h - 1], fill=0)  # column
+    draw.rectangle([0, t0, data_w - 1, t1], fill=0)  # row
+
+    # (5) alignment patterns (ver > 1): 5x5-module blocks around each
+    # non-finder-adjacent centre.
+    if ver > 1:
+        aloc = alig_location[ver - 2]
+        L = len(aloc)
+        for a in range(L):
+            for b in range(L):
+                if (a == b == 0) or (a == L - 1 and b == 0) or (a == 0 and b == L - 1):
+                    continue
+                x0, x1 = ppm * (aloc[a] - 2), ppm * (aloc[a] + 3) - 1
+                y0, y1 = ppm * (aloc[b] - 2), ppm * (aloc[b] + 3) - 1
+                draw.rectangle([x0, y0, x1, y1], fill=0)
+
+    # (6) sampling holes: the exact centre sub-pixel of every module (i%PPM ==
+    # PPM//2 AND j%PPM == PPM//2) -> keep QR. One point() call for all centres.
+    centre = ppm // 2
+    pts = [(x, y) for x in range(centre, data_w, ppm) for y in range(centre, data_h, ppm)]
+    draw.point(pts, fill=0)
+
+    return mask
 
 
 # Positional parameters
@@ -80,16 +134,7 @@ def run(
     def combine(ver, qr_name, bg_name, colorized, contrast, brightness, save_dir, save_name=None):
         from PIL import ImageEnhance
 
-        from amzqr.mylibs.constant import (
-            DATA_OFFSET_PX,
-            FINDER_REGION_PX,
-            PASTE_OFFSET_PX,
-            TIMING_MODULE,
-            alig_location,
-        )
-        from amzqr.mylibs.constant import (
-            PIXELS_PER_MODULE as ppm,
-        )
+        from amzqr.mylibs.constant import DATA_OFFSET_PX, PASTE_OFFSET_PX
 
         qr = Image.open(qr_name)
         qr = qr.convert("RGBA") if colorized else qr
@@ -119,39 +164,14 @@ def run(
 
         bg = bg0 if colorized else bg0.convert("1")
 
-        # Reserved-module skip set, in data-area pixel coords (origin at the
-        # first matrix module, i.e. PASTE_OFFSET_PX into the qr image).
-        aligs = []
-        if ver > 1:
-            aloc = alig_location[ver - 2]
-            for a in range(len(aloc)):
-                for b in range(len(aloc)):
-                    if not (
-                        (a == b == 0)
-                        or (a == len(aloc) - 1 and b == 0)
-                        or (a == 0 and b == len(aloc) - 1)
-                    ):
-                        for i in range(ppm * (aloc[a] - 2), ppm * (aloc[a] + 3)):
-                            for j in range(ppm * (aloc[b] - 2), ppm * (aloc[b] + 3)):
-                                aligs.append((i, j))
-
-        timing_pixels = range(TIMING_MODULE * ppm, (TIMING_MODULE + 1) * ppm)
-        right_finder_start = data_w - FINDER_REGION_PX
-        bottom_finder_start = data_h - FINDER_REGION_PX
-
-        for i in range(data_w):
-            for j in range(data_h):
-                if not (
-                    (i in timing_pixels)
-                    or (j in timing_pixels)
-                    or (i < FINDER_REGION_PX and j < FINDER_REGION_PX)
-                    or (i < FINDER_REGION_PX and j >= bottom_finder_start)
-                    or (i >= right_finder_start and j < FINDER_REGION_PX)
-                    or ((i, j) in aligs)
-                    or (i % ppm == ppm // 2 and j % ppm == ppm // 2)
-                    or (bg0.getpixel((i, j))[3] == 0)
-                ):
-                    qr.putpixel((i + PASTE_OFFSET_PX, j + PASTE_OFFSET_PX), bg.getpixel((i, j)))
+        # Composite via a reserved-region mask + one C-accelerated paste,
+        # replacing the former per-pixel putpixel loop (fast for large versions).
+        mask = _build_combine_mask(data_w, data_h, ver)
+        # Threshold bg alpha to binary (0/255) so paste hard-replaces, matching
+        # the former putpixel which drew semi-transparent bg pixels at full
+        # strength instead of alpha-blending them.
+        mask = ImageChops.multiply(mask, bg0.getchannel("A").point(lambda v: 255 if v else 0))
+        qr.paste(bg, (PASTE_OFFSET_PX, PASTE_OFFSET_PX), mask)
 
         qr_name = (
             os.path.join(save_dir, os.path.splitext(os.path.basename(bg_name))[0] + "_qrcode.png")

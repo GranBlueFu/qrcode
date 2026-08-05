@@ -197,3 +197,24 @@ def test_combine_scaling_preserves_aspect_ratio(tmp_path):
     fp = out.getpixel((finder_x0, finder_y0))
     # Finder center should be dark (black module), not red or blue.
     assert fp[0] < 50 and fp[1] < 50 and fp[2] < 50, f"finder should be dark, got {fp}"
+
+
+def test_combine_fully_transparent_bg_keeps_qr(tmp_path):
+    """A fully transparent background must leave the QR untouched (no red)."""
+    words = "https://github.com"
+    bg_path = tmp_path / "transparent.png"
+    Image.new("RGBA", (120, 120), (255, 0, 0, 0)).save(bg_path)  # red, alpha=0
+
+    ver, level, out_path = amzqr.run(
+        words,
+        level="H",
+        picture=str(bg_path),
+        colorized=True,
+        save_name="out.png",
+        save_dir=str(tmp_path),
+    )
+    out = Image.open(out_path).convert("RGBA")
+    reds = sum(
+        1 for x in range(out.width) for y in range(out.height) if _is_red(out.getpixel((x, y)))
+    )
+    assert reds == 0
