@@ -13,27 +13,17 @@ uv run pytest benchmarks/test_bench_qr_generation.py --benchmark-only
 uv run pytest benchmarks/test_bench_combine_static.py --benchmark-only
 uv run pytest benchmarks/test_bench_combine_gif.py --benchmark-only --benchmark-min-rounds=1 --benchmark-min-time=0.000001
 
-# 保存基线快照（三个场景分别保存，便于对比）
+# 切换到改动前的历史代码版本，运行测试，保存基线快照，并记下id（三个场景分别保存，便于对比）
 uv run pytest benchmarks/test_bench_qr_generation.py --benchmark-autosave
 uv run pytest benchmarks/test_bench_combine_static.py --benchmark-autosave
 uv run pytest benchmarks/test_bench_combine_gif.py --benchmark-min-rounds=1 --benchmark-min-time=0.000001 --benchmark-autosave
 
-# 对比指定基线（按场景选择对应 ID）
-uv run pytest benchmarks/test_bench_qr_generation.py --benchmark-compare=0001
-uv run pytest benchmarks/test_bench_combine_static.py --benchmark-compare=0004
-uv run pytest benchmarks/test_bench_combine_gif.py --benchmark-compare=0006 --benchmark-min-rounds=1 --benchmark-min-time=0.000001
+# 切换到改动后的代码版本，运行测试，对比指定基线（按场景选择对应保存的 id）
+uv run pytest benchmarks/test_bench_qr_generation.py --benchmark-compare=<id>
+uv run pytest benchmarks/test_bench_combine_static.py --benchmark-compare=<id>
+uv run pytest benchmarks/test_bench_combine_gif.py --benchmark-compare=<id> --benchmark-min-rounds=1 --benchmark-min-time=0.000001
 ```
 
-## 基线记录
+## 注意事项
 
-| 基线 ID | 场景 | 用例数 | 模式 | 对比命令 |
-|----------|------|--------|------|----------|
-| 0001 | ① QR 生成 | 32 | 多轮统计 | `--benchmark-compare=0001` |
-| 0004 | ② 静态图片合成 | 144 | 多轮统计 | `--benchmark-compare=0004` |
-| 0006 | ③ GIF 多帧合成 | 432 | 单轮 | `--benchmark-compare=0006` |
-
-> 三个场景独立保存基线，对比时需指定对应 ID。
-> ②③ 的基线为 #14 优化后重建（替代优化前因慢速而设的单轮基线），覆盖 version 1/10/40。
-> 静态图片合成使用多轮统计（#14 后已足够快）；GIF 多帧合成本质较慢，回归基线采用
-> 单轮完整模式以保证完整性与可执行性，静态仍为多轮统计。0002/0003 是优化前的旧基线，
-> 仅供演示 #14 加速；作为长期回归基准的是重建后的 0004/0006。
+对于 combine() 优化（commit 36e8515f6393874f8157f06fd212a7f25c85b925）之前的代码，benchmarks/test_bench_combine_gif.py 需要移除 version=40 的输入参数，避免造成耗时过长（几个小时）的情况。
