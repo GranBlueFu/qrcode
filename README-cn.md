@@ -64,6 +64,7 @@ amzqr  Words
       [-c]
       [-con contrast]
       [-bri brightness]
+      [-V]
 ```
 
 - [普通二维码](#普通二维码) 介绍了 `Words`, `-v`, `-l`, `-n`, `-d` 

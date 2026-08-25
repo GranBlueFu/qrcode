@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "amzqr"
-version = "0.0.2"
+dynamic = ["version"]
 description = "Generator for amazing QR Codes. Including Common, Artistic and Animated QR Codes."
 keywords = ["qr", "qrcode", "amazing", "artistic", "animated", "gif", "colorized"]
 license = { text = "GPLv3" }
@@ -32,6 +32,9 @@ amzqr = "amzqr.terminal:main"
 
 [tool.setuptools]
 packages = ["amzqr", "amzqr.mylibs"]
+
+[tool.setuptools.dynamic]
+version = { attr = "amzqr.__version__.__version__" }
 
 [dependency-groups]
 dev = [
