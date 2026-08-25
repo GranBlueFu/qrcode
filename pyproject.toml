@@ -32,6 +32,9 @@ amzqr = "amzqr.terminal:main"
 
 [tool.setuptools]
 packages = ["amzqr", "amzqr.mylibs"]
+# Keep METADATA at version 2.1: do not let setuptools auto-inject
+# a License-File (that field requires metadata 2.4) — GPLv3 is declared as text.
+license-files = []
 
 [tool.setuptools.dynamic]
 version = { attr = "amzqr.__version__.__version__" }
