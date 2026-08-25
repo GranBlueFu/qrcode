@@ -3,10 +3,11 @@
 
 import os
 
+from amzqr import __version__
 from amzqr.amzqr import run
 
 
-def main():
+def main(args=None):
     import argparse
 
     argparser = argparse.ArgumentParser()
@@ -16,7 +17,7 @@ def main():
     )
     argparser.add_argument(
         "-v",
-        "--version",
+        "--qr-version",
         type=int,
         choices=range(1, 41),
         default=1,
@@ -58,14 +59,21 @@ def main():
     argparser.add_argument(
         "-d", "--directory", default=os.getcwd(), help="The directory of output."
     )
-    args = argparser.parse_args()
+    argparser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=f"amzqr {__version__}",
+        help="Show the amzqr version and exit.",
+    )
+    args = argparser.parse_args(args)
 
     if args.picture and os.path.splitext(args.picture)[1].lower() == ".gif":
         print("It may take a while, please wait for minutes...")
 
     ver, ecl, qr_name = run(
         args.Words,
-        args.version,
+        args.qr_version,
         args.level,
         args.picture,
         args.colorized,

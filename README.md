@@ -64,6 +64,7 @@ amzqr Words
       [-c]
       [-con contrast]
       [-bri brightness]
+      [-V]
 ```
 
 - see [Common QR-Code](#common-qr-code) for `Words`, `-v`, `-l`, `-n`, `-d`
